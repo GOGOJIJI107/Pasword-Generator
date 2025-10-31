@@ -5,33 +5,35 @@
 # Description: Generates a secure random password
 # ===============================================
 
-# Function to generate a random password
 generate_password() {
     local LENGTH=$1
-    if [[ -z "$LENGTH" ]]; then
-        LENGTH=12  # Default length
+
+    # Default length = 12 if not provided or invalid
+    if ! [[ "$LENGTH" =~ ^[0-9]+$ ]] || [ "$LENGTH" -le 0 ]; then
+        LENGTH=12
     fi
 
-    # Define all possible characters
+    # Use tr safely — exclude confusing characters
     local CHAR_SET='A-Za-z0-9!@#$%^&*()_+=-{}[]<>?'
 
-    # Generate the password using /dev/urandom
-    PASSWORD=$(cat /dev/urandom | tr -dc "$CHAR_SET" | head -c "$LENGTH")
+    # Generate password
+    local PASSWORD
+    PASSWORD=$(tr -dc "$CHAR_SET" < /dev/urandom | head -c "$LENGTH")
 
-    echo "Generated Password: $PASSWORD"
+    # If password generation fails (e.g., empty), fallback
+    if [ -z "$PASSWORD" ]; then
+        echo "Error: Could not generate password."
+        exit 1
+    fi
+
+    echo "$PASSWORD"
 }
 
 # ===============================================
-# Main script execution
+# Main Execution
 # ===============================================
 
-echo "-----------------------------------------------"
-echo "        RANDOM PASSWORD GENERATOR"
-echo "-----------------------------------------------"
-read -p "Enter desired password length: " LENGTH
+read -p "Enter desired password length (default 12): " LENGTH
+PASSWORD=$(generate_password "$LENGTH")
 
-generate_password "$LENGTH"
-
-echo
-echo "✅ Password generated successfully!"
-echo "💡 Tip: You can redirect output to a file, e.g. ./random_password.sh > password.txt"
+echo "Generated Password: $PASSWORD"
